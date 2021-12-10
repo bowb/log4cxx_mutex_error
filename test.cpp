@@ -11,11 +11,36 @@
 
 #include <log4cxx/logmanager.h>
 #include <log4cxx/mdc.h>
+#include <log4cxx/helpers/loglog.h>
 #include <log4cxx/xml/domconfigurator.h>
+#include <log4cxx/patternlayout.h>
+#include <log4cxx/net/socketappender.h>
+#include <log4cxx/consoleappender.h>
+#include <log4cxx/basicconfigurator.h>
 
 void init_log4cxx()
 {
-    log4cxx::xml::DOMConfigurator::configure("logging.xml");
+    log4cxx::helpers::LogLog::setInternalDebugging(true);
+    log4cxx::helpers::LogLog::setQuietMode(false);
+    //log4cxx::xml::DOMConfigurator::configure("logging.xml");
+    log4cxx::LayoutPtr layout = std::static_pointer_cast<log4cxx::Layout>(std::make_shared<log4cxx::PatternLayout>("%d{yyyy/MM/dd HH:mm:ss.sssZ}  [3344:%.6t]  [%32F(%4L)]  [%-5p]  %m%n"));
+    auto appender = std::make_shared<log4cxx::net::SocketAppender>();
+    appender->setLayout(layout);
+    appender->setName(LOG4CXX_STR("BENCH"));
+    appender->setRemoteHost(LOG4CXX_STR("localhost"));
+    appender->setReconnectionDelay(5000);
+    appender->setPort(4445);
+    log4cxx::helpers::Pool pool;
+    appender->activateOptions(pool);
+    log4cxx::BasicConfigurator::configure(appender);
+
+    //auto consoleAppender = std::make_shared<log4cxx::ConsoleAppender>(layout);
+    //consoleAppender->setName(LOG4CXX_STR("Console"));
+
+    //consoleAppender->activateOptions(pool);
+    //log4cxx::BasicConfigurator::configure(consoleAppender);
+
+    log4cxx::Logger::getRootLogger()->setLevel(log4cxx::Level::getAll());
 }
 
 void bench(int howmany, log4cxx::LoggerPtr log)
@@ -71,7 +96,7 @@ void bench_mt(int howmany, log4cxx::LoggerPtr log, size_t thread_count)
 
 void bench_single_threaded(int iters)
 {
-    log4cxx::LoggerPtr appLogger = log4cxx::Logger::getLogger(L"Socket");
+    log4cxx::LoggerPtr appLogger = log4cxx::Logger::getLogger(L"BENCH");
     LOG4CXX_INFO(appLogger, "**************************************************************");
     LOG4CXX_INFO(appLogger, "Single threaded: messages ");
     LOG4CXX_INFO(appLogger, "**************************************************************");
@@ -82,12 +107,11 @@ void bench_single_threaded(int iters)
 int main(int argc, char *argv[])
 {
     init_log4cxx();
-    int iters = 250000;
+    int iters = 25000000;
     size_t threads = 4;
     int max_threads = 1000;
 
-    auto logger =  log4cxx::Logger::getLogger("Socket");
-
+    auto logger =  log4cxx::Logger::getLogger(L"BENCH");
     try
     {
         bench_single_threaded(iters);
