@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(test_package CXX)
+project(test CXX)
 
 find_package(log4cxx REQUIRED)
 find_package(Threads REQUIRED)
